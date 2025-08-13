@@ -1,0 +1,20 @@
+services:
+
+  mcp-rag-server:
+    build:
+      context: .
+      platforms:
+        #- "linux/amd64"
+        - "linux/arm64"
+      dockerfile: Dockerfile
+    ports:
+      - 9096:6060
+    environment:
+      - MCP_HTTP_PORT=6060
+      - LOCAL_WORKSPACE_FOLDER=/app/workspace
+    volumes:
+      - ../workspace:/app/workspace
+    #  - ./store:/app/store
+
+
+

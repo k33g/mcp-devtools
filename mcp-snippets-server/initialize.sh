@@ -8,7 +8,7 @@ This is by design - it ensures that both client and server agree
 on protocol version and capabilities before exchanging data.
 COMMENT
 
-source .env
+source mcp.server.env
 
 MCP_SERVER=${MCP_SERVER:-"http://localhost:${MCP_HTTP_PORT}"}
 

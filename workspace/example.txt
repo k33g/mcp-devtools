@@ -1,0 +1,3 @@
+Hello from MCP Files Server!
+This is a test file created by the write_file tool.
+Timestamp: Wed Aug 13 07:52:06 CEST 2025

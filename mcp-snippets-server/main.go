@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 
@@ -31,10 +30,7 @@ func main() {
 		"mcp-snippets-server",
 		"0.0.0",
 	)
-	err := godotenv.Load()
-	if err != nil {
-		// TODO:
-	}
+
 	// Ensure MODEL_RUNNER_BASE_URL is set in the environment
 	if os.Getenv("MODEL_RUNNER_BASE_URL") == "" {
 		os.Setenv("MODEL_RUNNER_BASE_URL", "http://localhost:12434/engines/llama.cpp/v1/")
@@ -64,7 +60,7 @@ func main() {
 	}
 
 	// Load the vector store from a file if it exists
-	err = store.Load(jsonStoreFilePath)
+	err := store.Load(jsonStoreFilePath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			log.Println("🚀 No existing vector store found, starting fresh.")
