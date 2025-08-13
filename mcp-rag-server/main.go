@@ -7,16 +7,16 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-
 	"github.com/openai/openai-go/v2" // imported as openai
 	"github.com/openai/openai-go/v2/option"
 
-	"mcp-snippets-server/helpers"
-	"mcp-snippets-server/rag"
+	"mcp-rag-server/helpers"
+	"mcp-rag-server/rag"
 )
 
 var client openai.Client
@@ -28,7 +28,7 @@ func main() {
 
 	// Create MCP server
 	s := server.NewMCPServer(
-		"mcp-snippets-server",
+		"mcp-rag-server",
 		"0.0.0",
 	)
 	err := godotenv.Load()
@@ -46,10 +46,15 @@ func main() {
 	if os.Getenv("JSON_STORE_FILE_PATH") == "" {
 		os.Setenv("JSON_STORE_FILE_PATH", "rag-memory-store.json")
 	}
+	// Ensure DOCUMENTS_PATH is set in the environment
+	if os.Getenv("DOCUMENTS_PATH") == "" {
+		os.Setenv("DOCUMENTS_PATH", "markdown")
+	}
 
 	llmURL := os.Getenv("MODEL_RUNNER_BASE_URL")
 	embeddingsModel = os.Getenv("EMBEDDING_MODEL")
 	jsonStoreFilePath := os.Getenv("JSON_STORE_FILE_PATH")
+	documentsPath := os.Getenv("DOCUMENTS_PATH")
 
 	client = openai.NewClient(
 		option.WithBaseURL(llmURL),
@@ -72,7 +77,7 @@ func main() {
 			// =================================================
 			// CHUNKS:
 			// =================================================
-			contents, err := helpers.GetContentFiles(".", ".md")
+			contents, err := helpers.GetContentFiles(documentsPath, ".md")
 			if err != nil {
 				log.Fatalln("😡 Error getting content files:", err)
 			}
@@ -81,26 +86,26 @@ func main() {
 			//fmt.Println("📂 Processing content files...", contents)
 			fmt.Println("📝 Processing(Chunking) content files...")
 
-			// chunkSize := os.Getenv("CHUNK_SIZE")
-			// if chunkSize == "" {
-			// 	chunkSize = "1024"
-			// }
-			// chunkOverlap := os.Getenv("CHUNK_OVERLAP")
-			// if chunkOverlap == "" {
-			// 	chunkOverlap = "256"
-			// }
-			// chunkSizeInt, err := strconv.Atoi(chunkSize)
-			// if err != nil {
-			// 	log.Fatalln("😡 Error converting chunk size to int:", err)
-			// }
-			// chunkOverlapInt, err := strconv.Atoi(chunkOverlap)
-			// if err != nil {
-			// 	log.Fatalln("😡 Error converting chunk overlap to int:", err)
-			// }
+			chunkSize := os.Getenv("CHUNK_SIZE")
+			if chunkSize == "" {
+				chunkSize = "1024"
+			}
+			chunkOverlap := os.Getenv("CHUNK_OVERLAP")
+			if chunkOverlap == "" {
+				chunkOverlap = "256"
+			}
+			chunkSizeInt, err := strconv.Atoi(chunkSize)
+			if err != nil {
+				log.Fatalln("😡 Error converting chunk size to int:", err)
+			}
+			chunkOverlapInt, err := strconv.Atoi(chunkOverlap)
+			if err != nil {
+				log.Fatalln("😡 Error converting chunk overlap to int:", err)
+			}
 
 			for _, content := range contents {
-				//chunks = append(chunks, rag.ChunkText(content, chunkSizeInt, chunkOverlapInt)...)
-				chunks = append(chunks, rag.SplitTextWithDelimiter(content, "----------")...)
+				chunks = append(chunks, rag.ChunkText(content, chunkSizeInt, chunkOverlapInt)...)
+				//chunks = append(chunks, rag.SplitTextWithDelimiter(content, "---")...)
 				//chunks = append(chunks, rag.ChunkWithMarkdownHierarchy(content)... )
 
 			}
@@ -151,11 +156,11 @@ func main() {
 	// =================================================
 	// TOOLS:
 	// =================================================
-	searchInDoc := mcp.NewTool("search_snippet",
-		mcp.WithDescription(`Find one or more snippets related to the topic.`),
-		mcp.WithString("topic",
+	searchInDoc := mcp.NewTool("rag_question",
+		mcp.WithDescription(`Find an answer in the internal database.`),
+		mcp.WithString("search_question",
 			mcp.Required(),
-			mcp.Description("Search topic or question to find relevant snippets."),
+			mcp.Description("Search question"),
 		),
 	)
 	s.AddTool(searchInDoc, searchInDocHandler)
@@ -190,14 +195,7 @@ func main() {
 func searchInDocHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 
 	args := request.GetArguments()
-	topicArg, exists := args["topic"]
-	if !exists || topicArg == nil {
-		return nil, fmt.Errorf("missing required parameter 'topic'")
-	}
-	userQuestion, ok := topicArg.(string)
-	if !ok {
-		return nil, fmt.Errorf("parameter 'topic' must be a string")
-	}
+	userQuestion := args["search_question"].(string)
 
 	fmt.Println("🔍 Searching for question:", userQuestion)
 

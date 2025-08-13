@@ -1,31 +1,33 @@
 services:
 
-  mcp-snippets-server:
+  mcp-rag-server:
     build:
       context: .
       platforms:
         #- "linux/amd64"
         - "linux/arm64"
       dockerfile: Dockerfile
-    #image: mcp-snippets-server:demo
     ports:
-      - 9090:6060
+      - 9095:6060
     environment:
       - MCP_HTTP_PORT=6060
-      - LIMIT=0.6
-      - MAX_RESULTS=1
+      - LIMIT=0.5
+      - MAX_RESULTS=5
       - JSON_STORE_FILE_PATH=store/rag-memory-store.json
+      - DOCUMENTS_PATH=markdown
+      - CHUNK_SIZE=512
+      - CHUNK_OVERLAP=128
     volumes:
-      - ./snippets:/app/snippets
+      - ./markdown:/app/markdown
       - ./store:/app/store
 
     models:
-      mxbai-embed:
+      granite-embedding:
         endpoint_var: MODEL_RUNNER_BASE_URL
         model_var: EMBEDDING_MODEL
 
 models:
-  mxbai-embed:
-    model: ai/mxbai-embed-large:latest
+  granite-embedding:
+    model: ai/granite-embedding-multilingual:latest
 
 
