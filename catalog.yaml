@@ -15,3 +15,7 @@ registry:
     remote:
       url: "http://mcp-memory:6060/mcp"
       transport_type: http
+  mcp-wasm:
+    remote:
+      url: "http://mcp-wasm:6060/mcp"
+      transport_type: http

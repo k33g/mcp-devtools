@@ -1,0 +1,19 @@
+services:
+
+  mcp-wasm-server:
+    build:
+      context: .
+      platforms:
+        #- "linux/amd64"
+        - "linux/arm64"
+      dockerfile: Dockerfile
+    ports:
+      - 9097:6060
+    environment:
+      - MCP_HTTP_PORT=6060
+      - PLUGINS_PATH=plugins
+    volumes:
+      - ./plugins:/app/plugins
+
+
+

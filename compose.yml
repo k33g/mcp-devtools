@@ -10,7 +10,7 @@ services:
       - --transport=streaming
       - --verbose
       - --catalog=/mcp/catalog.yaml
-      - --servers=mcp-rag,mcp-snippets,mcp-files,mcp-memory
+      - --servers=mcp-rag,mcp-snippets,mcp-files,mcp-memory,mcp-wasm
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./catalog.yaml:/mcp/catalog.yaml
@@ -23,6 +23,8 @@ services:
       mcp-files:
         condition: service_healthy
       mcp-memory:
+        condition: service_healthy
+      mcp-wasm:
         condition: service_healthy
 
   mcp-rag:
@@ -116,6 +118,24 @@ services:
       - LOCAL_WORKSPACE_FOLDER=/app/workspace
     volumes:
       - ./ai-helper-project/workspace:/app/workspace
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:6060/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  mcp-wasm:
+    build:
+      context: mcp-wasm-server
+      platforms:
+        - "linux/arm64"
+      dockerfile: Dockerfile
+    environment:
+      - MCP_HTTP_PORT=6060
+      - PLUGINS_PATH=/app/plugins
+    volumes:
+      - ./ai-helper-project/plugins:/app/plugins
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:6060/health"]
       interval: 30s

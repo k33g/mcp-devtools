@@ -16,7 +16,7 @@
         "diffEditor.ignoreTrimWhitespace": false,
         "editor.fontWeight": "normal",
         "editor.fontFamily": "'Droid Sans Mono', 'monospace', monospace",
-        "editor.fontSize": 14,
+        "editor.fontSize": 12,
         "editor.wordWrap": "on",
         "editor.quickSuggestions": {
             "comments": "off",
@@ -29,16 +29,16 @@
         "*.md": "vscode.markdown.preview.editor"
     },
     "[dockerfile]": {
-        "editor.fontSize": 16,
+        "editor.fontSize": 12,
     },
     "[dockercompose]": {
-        "editor.fontSize": 16,
+        "editor.fontSize": 12,
     },
     "[json]": {
         "editor.fontSize": 16,
     },
     "[yaml]": {
-        "editor.fontSize": 16,
+        "editor.fontSize": 12,
 
     },
     "[go]": {
