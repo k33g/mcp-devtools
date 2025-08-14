@@ -1,6 +1,6 @@
 services:
 
-  mcp-rag-server:
+  mcp-files-server:
     build:
       context: .
       platforms:

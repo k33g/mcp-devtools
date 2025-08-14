@@ -1,0 +1,130 @@
+services:
+
+  mcp-gateway:
+    # mcp-gateway secures your MCP servers
+    image: docker/mcp-gateway:latest
+    ports:
+      - 9011:9011
+    command:
+      - --port=9011
+      - --transport=streaming
+      - --verbose
+      - --catalog=/mcp/catalog.yaml
+      - --servers=mcp-rag,mcp-snippets,mcp-files,mcp-memory
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./catalog.yaml:/mcp/catalog.yaml
+
+    depends_on:
+      mcp-rag:
+        condition: service_healthy
+      mcp-snippets:
+        condition: service_healthy
+      mcp-files:
+        condition: service_healthy
+      mcp-memory:
+        condition: service_healthy
+
+  mcp-rag:
+    build:
+      context: mcp-rag-server
+      dockerfile: Dockerfile
+      platforms:
+        - "linux/arm64"      
+    # ports:
+    #   - 9095:6060
+    environment:
+      - MCP_HTTP_PORT=6060
+      - LIMIT=0.5
+      - MAX_RESULTS=5
+      - JSON_STORE_FILE_PATH=store/rag-memory-store.json
+      - DOCUMENTS_PATH=markdown
+      - CHUNK_SIZE=512
+      - CHUNK_OVERLAP=128 
+    volumes:
+      - ./ai-helper-project/markdown:/app/markdown
+      - ./ai-helper-project/rag-store:/app/store
+    models:
+      granite-embedding:
+        endpoint_var: MODEL_RUNNER_BASE_URL
+        model_var: EMBEDDING_MODEL
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:6060/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  mcp-snippets:
+    build:
+      context: mcp-snippets-server
+      dockerfile: Dockerfile
+      platforms:
+        - "linux/arm64"
+    # ports:
+    #   - 9090:6060
+    environment:
+      - MCP_HTTP_PORT=6060
+      - LIMIT=0.5
+      - MAX_RESULTS=2
+      - JSON_STORE_FILE_PATH=store/rag-memory-store.json
+    volumes:
+      - ./ai-helper-project/snippets:/app/snippets
+      - ./ai-helper-project/snippets-store:/app/store
+    models:
+      mxbai-embed:
+        endpoint_var: MODEL_RUNNER_BASE_URL
+        model_var: EMBEDDING_MODEL
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:6060/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+
+  mcp-memory:
+    build:
+      context: mcp-memory-server
+      platforms:
+        - "linux/arm64"
+      dockerfile: Dockerfile
+    # ports:
+    #   - 9097:6060
+    environment:
+      - MCP_HTTP_PORT=6060
+      - MEMORY_FOLDER=/app/memory
+    volumes:
+      - ./ai-helper-project/memory:/app/memory
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:6060/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  mcp-files:
+    build:
+      context: mcp-files-server
+      platforms:
+        - "linux/arm64"
+      dockerfile: Dockerfile
+    # ports:
+    #   - 9096:6060
+    environment:
+      - MCP_HTTP_PORT=6060
+      - LOCAL_WORKSPACE_FOLDER=/app/workspace
+    volumes:
+      - ./ai-helper-project/workspace:/app/workspace
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:6060/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+models:
+  granite-embedding:
+    model: ai/granite-embedding-multilingual:latest
+  mxbai-embed:
+    model: ai/mxbai-embed-large:latest    

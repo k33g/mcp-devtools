@@ -42,7 +42,7 @@
 
     },
     "[go]": {
-        "editor.fontSize": 14,
+        "editor.fontSize": 12,
     },
     "todohighlight.keywords": [
         {

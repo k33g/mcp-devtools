@@ -1,0 +1,24 @@
+I need a streamable HTTP MCP server in Golang  like in ../mcp-files-server
+
+the mcp server will store messages with the following fields
+- id: unique index
+- date of the creation of the message with day year hour minute second
+- content of the message
+- role: who create the message (assistant, user, system)
+- agent: name of the agent
+
+to persist and retrieve the messages you will use this golang library: https://github.com/sea-monkeys/artemia
+
+I need the following tools:
+
+- save message
+- get last message
+- get last 3 messages
+- get last N messages
+- delete messages older than n hours
+- delete messages older than n days
+
+
+---
+
+

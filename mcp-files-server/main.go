@@ -9,17 +9,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/joho/godotenv"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
 
 func main() {
-	// Load environment variables
-	err := godotenv.Load("mcp.server.env")
-	if err != nil {
-		// Continue without .env file
-	}
 
 	// Create MCP server
 	s := server.NewMCPServer(
@@ -51,6 +45,16 @@ func main() {
 	)
 	s.AddTool(writeFileTool, writeFileHandler)
 
+	// Delete file tool
+	deleteFileTool := mcp.NewTool("delete_file",
+		mcp.WithDescription("Delete a file from the filesystem"),
+		mcp.WithString("file_path",
+			mcp.Required(),
+			mcp.Description("Path to the file to delete"),
+		),
+	)
+	s.AddTool(deleteFileTool, deleteFileHandler)
+
 	// Start the HTTP server
 	httpPort := os.Getenv("MCP_HTTP_PORT")
 	if httpPort == "" {
@@ -79,12 +83,12 @@ func main() {
 
 func readFileHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	args := request.GetArguments()
-	
+
 	filePathArg, exists := args["file_path"]
 	if !exists || filePathArg == nil {
 		return nil, fmt.Errorf("missing required parameter 'file_path'")
 	}
-	
+
 	filePath, ok := filePathArg.(string)
 	if !ok {
 		return nil, fmt.Errorf("parameter 'file_path' must be a string")
@@ -92,12 +96,12 @@ func readFileHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Cal
 
 	// Clean and validate the file path
 	cleanPath := filepath.Clean(filePath)
-	
+
 	// Prefix with LOCAL_WORKSPACE_FOLDER if set
 	if workspaceFolder := os.Getenv("LOCAL_WORKSPACE_FOLDER"); workspaceFolder != "" {
 		cleanPath = filepath.Join(workspaceFolder, cleanPath)
 	}
-	
+
 	// Read the file
 	content, err := os.ReadFile(cleanPath)
 	if err != nil {
@@ -113,12 +117,12 @@ func readFileHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Cal
 
 func writeFileHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	args := request.GetArguments()
-	
+
 	filePathArg, exists := args["file_path"]
 	if !exists || filePathArg == nil {
 		return nil, fmt.Errorf("missing required parameter 'file_path'")
 	}
-	
+
 	filePath, ok := filePathArg.(string)
 	if !ok {
 		return nil, fmt.Errorf("parameter 'file_path' must be a string")
@@ -128,7 +132,7 @@ func writeFileHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Ca
 	if !exists || contentArg == nil {
 		return nil, fmt.Errorf("missing required parameter 'content'")
 	}
-	
+
 	content, ok := contentArg.(string)
 	if !ok {
 		return nil, fmt.Errorf("parameter 'content' must be a string")
@@ -136,12 +140,12 @@ func writeFileHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Ca
 
 	// Clean the file path
 	cleanPath := filepath.Clean(filePath)
-	
+
 	// Prefix with LOCAL_WORKSPACE_FOLDER if set
 	if workspaceFolder := os.Getenv("LOCAL_WORKSPACE_FOLDER"); workspaceFolder != "" {
 		cleanPath = filepath.Join(workspaceFolder, cleanPath)
 	}
-	
+
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(cleanPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -158,10 +162,46 @@ func writeFileHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Ca
 	return mcp.NewToolResultText(fmt.Sprintf("Successfully wrote %d bytes to %s", len(content), cleanPath)), nil
 }
 
+func deleteFileHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	args := request.GetArguments()
+
+	filePathArg, exists := args["file_path"]
+	if !exists || filePathArg == nil {
+		return nil, fmt.Errorf("missing required parameter 'file_path'")
+	}
+
+	filePath, ok := filePathArg.(string)
+	if !ok {
+		return nil, fmt.Errorf("parameter 'file_path' must be a string")
+	}
+
+	// Clean the file path
+	cleanPath := filepath.Clean(filePath)
+
+	// Prefix with LOCAL_WORKSPACE_FOLDER if set
+	if workspaceFolder := os.Getenv("LOCAL_WORKSPACE_FOLDER"); workspaceFolder != "" {
+		cleanPath = filepath.Join(workspaceFolder, cleanPath)
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(cleanPath); os.IsNotExist(err) {
+		return mcp.NewToolResultError(fmt.Sprintf("File not found: %s", cleanPath)), nil
+	}
+
+	// Delete the file
+	err := os.Remove(cleanPath)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Error deleting file: %v", err)), nil
+	}
+
+	log.Printf("Successfully deleted file: %s", cleanPath)
+	return mcp.NewToolResultText(fmt.Sprintf("Successfully deleted file: %s", cleanPath)), nil
+}
+
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	
+
 	response := map[string]interface{}{
 		"status": "healthy",
 		"server": "mcp-files-server",

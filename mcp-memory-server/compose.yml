@@ -1,0 +1,20 @@
+services:
+
+  mcp-memory-server:
+    build:
+      context: .
+      platforms:
+        #- "linux/amd64"
+        - "linux/arm64"
+      dockerfile: Dockerfile
+    ports:
+      - 9097:6060
+    environment:
+      - MCP_HTTP_PORT=6060
+      - MEMORY_FOLDER=/app/memory
+    volumes:
+      - ../memory:/app/memory
+    #  - ./store:/app/store
+
+
+

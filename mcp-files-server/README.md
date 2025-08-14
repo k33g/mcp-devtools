@@ -8,7 +8,7 @@ The MCP Files Server enables AI assistants and automation tools to safely read a
 
 - **Workspace Isolation**: All file operations are contained within a configurable workspace directory via `LOCAL_WORKSPACE_FOLDER`
 - **Secure File Access**: Proper path validation and cleaning to prevent directory traversal attacks
-- **Simple API**: Two essential tools for file manipulation - read and write operations
+- **Simple API**: Three essential tools for file manipulation - read, write, and delete operations
 - **HTTP Streaming**: Built on the MCP streamable HTTP protocol for real-time communication
 - **Zero Dependencies**: Minimal external dependencies for easy deployment and maintenance
 
@@ -40,12 +40,20 @@ Writes content to a text file within the workspace.
 
 **Returns:** Success message with file path and byte count
 
+### `delete_file`
+Deletes a file from the filesystem within the workspace.
+
+**Parameters:**
+- `file_path` (string, required): Relative path to the file within the workspace
+
+**Returns:** Success message confirming file deletion
+
 ## Architecture
 
 The server follows the MCP protocol specification and provides:
 
 1. **Session Management**: Each client connection gets a unique session ID
-2. **Tool Registration**: Both file tools are registered with proper parameter validation
+2. **Tool Registration**: All three file tools are registered with proper parameter validation
 3. **Error Handling**: Comprehensive error responses for missing files, permissions, etc.
 4. **Health Monitoring**: `/health` endpoint for service monitoring
 5. **Workspace Security**: All file paths are prefixed with `LOCAL_WORKSPACE_FOLDER`
